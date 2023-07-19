@@ -29,7 +29,8 @@ def prep_data(data, covariates, data_start, train = True):
     input_size = window_size-stride_size
     windows_per_series = np.full((num_series), (time_len-input_size) // stride_size)
     #print("windows pre: ", windows_per_series.shape)
-    if train: windows_per_series -= (data_start+stride_size-1) // stride_size
+    if train: 
+        windows_per_series -= (data_start+stride_size-1) // stride_size
     #print("data_start: ", data_start.shape)
     #print(data_start)
     #print("windows: ", windows_per_series.shape)
@@ -49,6 +50,7 @@ def prep_data(data, covariates, data_start, train = True):
             covariates[data_start[series]:time_len, 0] = cov_age[:time_len-data_start[series]]
         else:
             covariates[:, 0] = cov_age[-time_len:]
+        #滑动窗口
         for i in range(windows_per_series[series]):
             if train:
                 window_start = stride_size*i+data_start[series]
@@ -62,6 +64,7 @@ def prep_data(data, covariates, data_start, train = True):
             print("data: ", data.shape)
             print("d: ", data[window_start:window_end-1, series].shape)
             '''
+            #得到x_input
             x_input[count, 1:, 0] = data[window_start:window_end-1, series]
             x_input[count, :, 1:1+num_covariates] = covariates[window_start:window_end, :]
             x_input[count, :, -1] = series
@@ -71,9 +74,11 @@ def prep_data(data, covariates, data_start, train = True):
                 v_input[count, 0] = 0
             else:
                 v_input[count, 0] = np.true_divide(x_input[count, 1:input_size, 0].sum(),nonzero_sum)+1
+                #数据缩放
                 x_input[count, :, 0] = x_input[count, :, 0]/v_input[count, 0]
                 if train:
                     label[count, :] = label[count, :]/v_input[count, 0]
+            #随时间窗口的滑动和户数的滚动来累加count，所以最终的x_input长度为total_windows
             count += 1
     prefix = os.path.join(save_path, 'train_' if train else 'test_')
     np.save(prefix+'data_'+save_name, x_input)
