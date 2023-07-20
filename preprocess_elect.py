@@ -10,7 +10,9 @@ import numpy as np
 import random
 from tqdm import trange
 
+#通过 BytesIO，我们可以将二进制数据读取到内存中的缓冲区，或将内存中的二进制数据写入到缓冲区
 from io import BytesIO
+#处理网络请求
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -29,7 +31,8 @@ def prep_data(data, covariates, data_start, train = True):
     input_size = window_size-stride_size
     windows_per_series = np.full((num_series), (time_len-input_size) // stride_size)
     #print("windows pre: ", windows_per_series.shape)
-    if train: windows_per_series -= (data_start+stride_size-1) // stride_size
+    if train: 
+        windows_per_series -= (data_start+stride_size-1) // stride_size
     #print("data_start: ", data_start.shape)
     #print(data_start)
     #print("windows: ", windows_per_series.shape)
