@@ -29,6 +29,7 @@ def prep_data(data, covariates, data_start, train = True):
     time_len = data.shape[0]
     #print("time_len: ", time_len)
     input_size = window_size-stride_size
+    #每个序列的窗口数
     windows_per_series = np.full((num_series), (time_len-input_size) // stride_size)
     #print("windows pre: ", windows_per_series.shape)
     if train: 
@@ -46,12 +47,14 @@ def prep_data(data, covariates, data_start, train = True):
     count = 0
     if not train:
         covariates = covariates[-time_len:]
+    #遍历每个时间序列
     for series in trange(num_series):
         cov_age = stats.zscore(np.arange(total_time-data_start[series]))
         if train:
             covariates[data_start[series]:time_len, 0] = cov_age[:time_len-data_start[series]]
         else:
             covariates[:, 0] = cov_age[-time_len:]
+        #遍历每个时间序列的窗口
         for i in range(windows_per_series[series]):
             if train:
                 window_start = stride_size*i+data_start[series]
@@ -65,9 +68,15 @@ def prep_data(data, covariates, data_start, train = True):
             print("data: ", data.shape)
             print("d: ", data[window_start:window_end-1, series].shape)
             '''
+            #第一列赋值：时间序列，从窗口的第二个值开始 from start to end-1
+            #每个窗口内，start-1时刻值默认为0，也就是不记录上一个窗口的最后一个值
+            #解决了之前的疑惑
             x_input[count, 1:, 0] = data[window_start:window_end-1, series]
+            #中间列赋值：协变量
             x_input[count, :, 1:1+num_covariates] = covariates[window_start:window_end, :]
+            #最后一列赋值：时间序列id
             x_input[count, :, -1] = series
+            #标签列赋值：start,end
             label[count, :] = data[window_start:window_end, series]
             nonzero_sum = (x_input[count, 1:input_size, 0]!=0).sum()
             if nonzero_sum == 0:
@@ -77,6 +86,7 @@ def prep_data(data, covariates, data_start, train = True):
                 x_input[count, :, 0] = x_input[count, :, 0]/v_input[count, 0]
                 if train:
                     label[count, :] = label[count, :]/v_input[count, 0]
+            #窗口滚动
             count += 1
     prefix = os.path.join(save_path, 'train_' if train else 'test_')
     np.save(prefix+'data_'+save_name, x_input)
